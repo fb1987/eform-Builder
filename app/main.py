@@ -10,16 +10,33 @@ from app.composer import compose_xml
 from app.pdf_outline import extract_outline_from_pdf
 from app.openai_client import cir_from_description, cir_from_pdf_text
 
+# app/main.py (only the CORS middleware setup changed)
+from app.config import (
+    ALLOWED_ORIGINS, ALLOWED_ORIGIN_REGEX, ALLOW_ALL_ORIGINS,
+    EXPOSE_HEADERS, DEBUG, SERVICE_NAME
+)
+
 app = FastAPI(title="Ocean eForm Builder", version="0.1.0")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS or ["*"],
-    allow_credentials=False,
+cors_kwargs = dict(
+    allow_credentials=False,                  # we are not using cookies
     allow_methods=["POST", "GET", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=EXPOSE_HEADERS,            # let JS read Content-Disposition, X-Service
     max_age=86400,
 )
+
+if ALLOW_ALL_ORIGINS:
+    cors_kwargs["allow_origins"] = ["*"]
+elif ALLOWED_ORIGIN_REGEX:
+    cors_kwargs["allow_origin_regex"] = ALLOWED_ORIGIN_REGEX
+else:
+    # Exact match list. Example: ["https://eform-builder.webflow.io"]
+    cors_kwargs["allow_origins"] = ALLOWED_ORIGINS or ["*"]
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
+
+
 
 @app.get("/health", tags=["meta"])
 def health():
