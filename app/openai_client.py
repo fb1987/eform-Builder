@@ -72,7 +72,7 @@ def _chat_with_schema(messages, schema: Dict) -> Dict:
                     },
                 ],
                 response_format={"type": "json_object"},  # JSON mode
-                temperature=0
+                temperature=1
             )
             txt = resp.choices[0].message.content
             return json.loads(_strip_json_fences(txt))
