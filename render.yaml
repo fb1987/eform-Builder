@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: eform-builder
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5.1
+      - key: ALLOWED_ORIGINS
+        value: https://*.webflow.io, https://ocean.cognisantmd.com
+      - key: DEFAULT_NOTE_VERSION
+        value: "2"
