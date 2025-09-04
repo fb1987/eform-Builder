@@ -49,7 +49,7 @@ def _chat_with_schema(messages, schema: Dict) -> Dict:
             model=OPENAI_MODEL,
             messages=messages,
             response_format=response_format,  # Structured Outputs (strict)
-            temperature=0
+            temperature=1
         )
         txt = resp.choices[0].message.content
         cir = json.loads(_strip_json_fences(txt))
