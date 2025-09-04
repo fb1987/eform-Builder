@@ -1,13 +1,10 @@
 # app/openai_client.py
 import json
+import re
 from typing import Dict, Tuple
-from openai import OpenAI
+from openai import OpenAI, APIError
 from app.config import OPENAI_API_KEY, OPENAI_MODEL
 from app.cir_schema import CIR_JSON_SCHEMA
-
-# NOTE: Requires OpenAI Python SDK (Responses API).
-# Structured Outputs with json_schema and strict true.
-# Docs: Structured Outputs & Responses API.  # :contentReference[oaicite:1]{index=1}
 
 _client = None
 
@@ -21,54 +18,83 @@ SYSTEM_PROMPT = """You are an Ocean eForm architect. Produce ONLY a valid CIR JS
 Rules:
 - Use ONLY allowed enums for itemType, flagColor, hints, validator types, noteType, dataSecurityMode.
 - Generate safe item refs matching ^[A-Za-z0-9_]+$ (unique within the form).
-- Prefer concise, clinically sensible item texts and sections.
-- If user asks for complex logic, use showIf/makeNoteIf/formula accordingly (reference items by ref).
-- Keep the output minimal; omit null/empty fields.
+- Use showIf/makeNoteIf/formula appropriately, referencing items by ref.
+- Keep output minimal; omit null/empty fields.
 """
 
-def _response_format():
-    return {
+def _strip_json_fences(s: str) -> str:
+    if not s:
+        return s
+    s = s.strip()
+    # Remove ```json ... ``` or ``` ... ```
+    m = re.match(r"^```(?:json)?\s*(.*?)\s*```$", s, flags=re.DOTALL | re.IGNORECASE)
+    return m.group(1).strip() if m else s
+
+def _chat_with_schema(messages, schema: Dict) -> Dict:
+    """
+    Primary path: Chat Completions with Structured Outputs via response_format.json_schema (strict).
+    Fallback: JSON mode + local parse if the server rejects json_schema.
+    """
+    client = _get_client()
+    response_format = {
         "type": "json_schema",
         "json_schema": {
             "name": "ocean_cir",
-            "schema": CIR_JSON_SCHEMA,
+            "schema": schema,
             "strict": True
         }
     }
+    try:
+        resp = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=messages,
+            response_format=response_format,  # Structured Outputs (strict)
+            temperature=0
+        )
+        txt = resp.choices[0].message.content
+        cir = json.loads(_strip_json_fences(txt))
+        return cir
+    except APIError as e:
+        # If the installed API/model rejects json_schema response_format, retry with JSON mode.
+        if getattr(e, "status_code", None) in (400, 404) or "response_format" in str(e):
+            resp = client.chat.completions.create(
+                model=OPENAI_MODEL,
+                messages=[
+                    messages[0],  # system
+                    {
+                        "role": "user",
+                        "content": (
+                            "Return ONLY valid JSON that adheres to this JSON Schema. "
+                            "Do not include any explanation or code fences.\n\n"
+                            f"JSON Schema:\n{json.dumps(schema)}\n\n"
+                            f"Task:\n{messages[-1]['content']}"
+                        ),
+                    },
+                ],
+                response_format={"type": "json_object"},  # JSON mode
+                temperature=0
+            )
+            txt = resp.choices[0].message.content
+            return json.loads(_strip_json_fences(txt))
+        raise
 
 def cir_from_description(description: str, defaults: Dict) -> Tuple[Dict, str]:
     """
-    Create a CIR from a free-text description using structured outputs.
+    Create a CIR from a free-text description using structured output (chat completions).
     Returns (cir_dict, raw_json_string).
     """
-    client = _get_client()
-    input_messages = [
+    messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user", "content": f"Defaults: {json.dumps(defaults)}\n\nDescription:\n{description.strip()}"}
+        {"role": "user", "content": f"Defaults: {json.dumps(defaults)}\n\nDescription:\n{description.strip()}"},
     ]
-    resp = client.responses.create(
-        model=OPENAI_MODEL,
-        input=input_messages,
-        response_format=_response_format(),
-    )
-    # Robust parsing across SDK versions
-    cir = getattr(resp, "output_parsed", None)
-    if not cir:
-        txt = getattr(resp, "output_text", None)
-        if not txt and getattr(resp, "output", None):
-            try:
-                txt = resp.output[0].content[0].text  # older shape
-            except Exception:
-                txt = None
-        cir = json.loads(txt) if txt else {}
+    cir = _chat_with_schema(messages, CIR_JSON_SCHEMA)
     raw = json.dumps(cir, ensure_ascii=False)
     return cir, raw
 
 def cir_from_pdf_text(pdf_text: str, defaults: Dict) -> Tuple[Dict, str]:
-    client = _get_client()
     prompt = f"""You are converting a paper form into Ocean eForm CIR.
 
-PDF text (may be messy, deduplicate & normalize headings/fields):
+PDF text (may be messy; normalize headings/fields; avoid duplicates):
 ---
 {pdf_text[:20000]}
 ---
@@ -76,20 +102,10 @@ PDF text (may be messy, deduplicate & normalize headings/fields):
 Defaults: {json.dumps(defaults)}
 
 Return ONLY CIR JSON."""
-    resp = client.responses.create(
-        model=OPENAI_MODEL,
-        input=[{"role": "system", "content": SYSTEM_PROMPT},
-               {"role": "user", "content": prompt}],
-        response_format=_response_format(),
-    )
-    cir = getattr(resp, "output_parsed", None)
-    if not cir:
-        txt = getattr(resp, "output_text", None)
-        if not txt and getattr(resp, "output", None):
-            try:
-                txt = resp.output[0].content[0].text
-            except Exception:
-                txt = None
-        cir = json.loads(txt) if txt else {}
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": prompt},
+    ]
+    cir = _chat_with_schema(messages, CIR_JSON_SCHEMA)
     raw = json.dumps(cir, ensure_ascii=False)
     return cir, raw
