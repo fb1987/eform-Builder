@@ -131,6 +131,11 @@ def build_guidance_block(user_text: str, defaults: Dict) -> str:
         "- Ensure first top-level section in CIR becomes subcategory='QUESTIONNAIRE' in XML.",
         "- Keep refs unique (^[A-Za-z0-9_]+$). For MENU / MENU_MULTI_SELECT include >= 2 choices; no '|' in choice@val.",
         "- Use validators where common (e.g., MANDATORY/REG_EXP/PHONE/EMAIL/POSTAL_CODE).",
+        "HARD_RULES:",
+        "- Put the question prompt in 'label' (maps to <c>), not 'text'. Use 'text' only for prefill/defaults.",
+        "- FORMULA must be an expression (e.g., 'q1.p + q2.p + ...' or 'ScriptUtil.sum(sectionRef)'); never use SUM().",
+        "- To emit a calculated value into notes, set cNote and use '$$'.",
+        "- In showIf/makeNoteIf, always compare '.r' or '.p' (e.g., consentChoice.r == 'YES', q1.p >= 2).",
     ]
     body = _emit_bundle_text(bundle)
     return "\n".join(header) + "\n\n" + body
