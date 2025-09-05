@@ -1,0 +1,56 @@
+{
+  "type": "FORMULA",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No FORMULA items use validators."
+    },
+    {
+      "rule": "No FORMULA items use hints."
+    },
+    {
+      "rule": "No FORMULA items use cNote."
+    },
+    {
+      "rule": "No FORMULA item uses a validator."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "No FORMULA items have validators."
+    },
+    {
+      "rule": "No FORMULA item uses validators."
+    },
+    {
+      "rule": "No FORMULA item uses hints."
+    },
+    {
+      "rule": "No FORMULA item has a validator."
+    },
+    {
+      "rule": "No validators."
+    }
+  ],
+  "validators_common": [],
+  "hints_common": [
+    "Use_buttons_for_menu (in one formula item)",
+    "Use_buttons_for_menu",
+    "Js_menu_option",
+    "Same_line (observed in at least one formula).",
+    "Use_buttons_for_menu (in one formula item)."
+  ],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "partASum",
+      "label": "@ASRS-A: $$ / 6"
+    },
+    {
+      "ref": "partBSum",
+      "label": "@ASRS-B: $$ / 12"
+    }
+  ]
+}
