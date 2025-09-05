@@ -1,4 +1,3 @@
-# app/openai_client.py
 import json
 import re
 from typing import Dict, Tuple
@@ -6,8 +5,9 @@ from openai import OpenAI, APIError
 from app.config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_TEMPERATURE
 from app.cir_schema import CIR_JSON_SCHEMA
 from app.guidance import build_guidance_block
-import os
+from app.repair import auto_repair_cir, AUTO_REPAIR_ENABLED
 
+import os
 _client = None
 
 def _get_client() -> OpenAI:
@@ -16,14 +16,16 @@ def _get_client() -> OpenAI:
         _client = OpenAI(api_key=OPENAI_API_KEY)
     return _client
 
-USE_DATA_GUIDANCE = os.getenv("USE_DATA_GUIDANCE", "0") == "1"
+USE_DATA_GUIDANCE = os.getenv("USE_DATA_GUIDANCE", "1") == "1"  # default ON
 
 BASE_SYSTEM = """You are an Ocean eForm architect. Produce ONLY a valid CIR JSON object that matches the provided JSON Schema.
-Rules:
-- Use ONLY allowed enums for itemType, flagColor, hints, validator types, noteType, dataSecurityMode.
-- Generate safe item refs matching ^[A-Za-z0-9_]+$ (unique within the form).
-- Use showIf/makeNoteIf/formula appropriately, referencing items by ref.
-- Keep output minimal; omit null/empty fields."""
+Hard rules:
+- Put the patient-visible prompt in 'label' (composer writes it to <c>); use 'text' only for default values/macros (e.g., @ptCpp.*).
+- Include 'kind' for every node ('section' or 'item').
+- Use .p (numeric points) or .r (response text) in all expressions; never use SUM(). Use q1.p+q2.p+... or ScriptUtil.sum(sectionRef).
+- MENUs must include a 'choices' array (>=2). Avoid '|' in choice.val. Set points explicitly when scoring.
+- The first top-level section must map to subcategory='QUESTIONNAIRE' in XML.
+- Keep refs unique (^[A-Za-z0-9_]+$). Keep output minimal; omit null/empty fields."""
 
 def _strip_json_fences(s: str) -> str:
     if not s: return s
@@ -81,6 +83,8 @@ def cir_from_description(description: str, defaults: Dict) -> Tuple[Dict, str]:
         {"role": "user", "content": f"Defaults: {json.dumps(defaults)}\n\nDescription:\n{description.strip()}"},
     ]
     cir = _chat_with_schema(messages, CIR_JSON_SCHEMA)
+    if AUTO_REPAIR_ENABLED:
+        cir = auto_repair_cir(cir)
     return cir, json.dumps(cir, ensure_ascii=False)
 
 def cir_from_pdf_text(pdf_text: str, defaults: Dict) -> Tuple[Dict, str]:
@@ -100,4 +104,6 @@ Return ONLY CIR JSON."""
         {"role": "user", "content": prompt},
     ]
     cir = _chat_with_schema(messages, CIR_JSON_SCHEMA)
+    if AUTO_REPAIR_ENABLED:
+        cir = auto_repair_cir(cir)
     return cir, json.dumps(cir, ensure_ascii=False)
