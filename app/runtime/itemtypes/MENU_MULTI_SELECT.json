@@ -1,0 +1,68 @@
+{
+  "type": "MENU_MULTI_SELECT",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No MENU_MULTI_SELECT items use validators."
+    },
+    {
+      "rule": "No MENU_MULTI_SELECT items use hints."
+    },
+    {
+      "rule": "No MENU_MULTI_SELECT items use points."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "No validators used."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No hints are used."
+    },
+    {
+      "rule": "No points assigned to choices."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    }
+  ],
+  "validators_common": [
+    "Mandatory",
+    "Mandatory (6/21) for required multi-selects.",
+    "Mandatory validator is used on 6/21 items typically when at least one selection is required.",
+    "Mandatory (6/21).",
+    "Mandatory (all 10/10 menu_multi_select items)"
+  ],
+  "hints_common": [
+    "Use_buttons_for_menu",
+    "Vertical_stacking",
+    "Same_line",
+    "Vertical_stacking is sometimes used for longer lists.",
+    "Vertical_stacking for easier multi-select display."
+  ],
+  "choice_authoring": [
+    "Minimum 2 choices per menu_multi_select.",
+    "No points attribute used.",
+    "All menu_multi_select items have at least 2 choices.",
+    "All choices have points.",
+    "No points attribute is used."
+  ],
+  "examples": [
+    {
+      "ref": "s__item1",
+      "label": "Which anti-inflammatory do you use?"
+    },
+    {
+      "ref": "diet",
+      "label": "How would you describe your diet? (select all that apply)"
+    }
+  ]
+}

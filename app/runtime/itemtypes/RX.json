@@ -1,0 +1,42 @@
+{
+  "type": "RX",
+  "required": [],
+  "recommended": [
+    {
+      "rule": "All RX items have a <c> label."
+    }
+  ],
+  "anti_patterns": [
+    {
+      "rule": "No <cNote>."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    },
+    {
+      "rule": "No points or scoring attributes are present."
+    },
+    {
+      "rule": "RX items do not use validators."
+    }
+  ],
+  "validators_common": [],
+  "hints_common": [],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "bupropion_zyban",
+      "label": "bupropion (Zyban)"
+    },
+    {
+      "ref": "megesterol_acetate",
+      "label": "megesterol acetate"
+    }
+  ]
+}
