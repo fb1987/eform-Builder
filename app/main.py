@@ -1,6 +1,4 @@
-# app/main.py
 import io
-import json
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse, JSONResponse
@@ -13,7 +11,7 @@ from app.composer import compose_xml
 from app.pdf_outline import extract_outline_from_pdf
 from app.openai_client import cir_from_description, cir_from_pdf_text
 
-app = FastAPI(title="Ocean eForm Builder", version="0.2.0")
+app = FastAPI(title="Ocean eForm Builder", version="0.3.0")
 
 cors_kwargs = dict(
     allow_credentials=False,
@@ -54,7 +52,8 @@ async def create_from_description_xml(
     cir, _raw = cir_from_description(description, defaults)
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
-        raise HTTPException(status_code=400, detail={"issues": v["issues"]})
+        # show normalized issues inline to aid debugging in the UI
+        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir")}, status_code=400)
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
@@ -73,7 +72,7 @@ async def create_from_pdf_xml(
     cir, _raw = cir_from_pdf_text(pdf_text, defaults)
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
-        raise HTTPException(status_code=400, detail={"issues": v["issues"]})
+        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir")}, status_code=400)
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
