@@ -12,6 +12,7 @@ from app.validators import validate_and_normalize_cir
 from app.composer import compose_xml
 from app.pdf_outline import extract_outline_from_pdf
 from app.openai_client import cir_from_description, cir_from_pdf_text
+from app.normalizers import harden_cir
 
 app = FastAPI(title="Ocean eForm Builder", version="0.2.0")
 
@@ -52,6 +53,7 @@ async def create_from_description_xml(
 ):
     defaults = {"meta": {"title": title, "ref": ref, "noteVersion": 2, "noteType": noteType, "dataSecurityMode": dataSecurityMode}}
     cir, _raw = cir_from_description(description, defaults)
+    cir = harden_cir(cir)
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
         raise HTTPException(status_code=400, detail={"issues": v["issues"]})
