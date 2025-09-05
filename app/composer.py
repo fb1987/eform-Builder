@@ -1,12 +1,13 @@
+# app/composer.py
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 from typing import Dict, List, Optional
 from app.config import DEFAULT_NOTE_VERSION
 
 def _attr(el: Element, pairs: List[tuple]):
-    """Set attributes in a stable order."""
+    """Set attributes in a stable order; skip empty strings/None."""
     for k, v in pairs:
-        if v is None:
+        if v is None: 
             continue
         vs = str(v)
         if vs == "":
@@ -14,16 +15,19 @@ def _attr(el: Element, pairs: List[tuple]):
         el.set(k, vs)
 
 def _set_bool_attr(el: Element, name: str, val: Optional[bool]):
-    if val is None: return
+    if val is None:
+        return
     el.set(name, "true" if val else "false")
 
 def _text(parent: Element, tag: str, value: Optional[str]):
-    if value is not None and str(value) != "":
+    if value is not None and str(value).strip() != "":
         s = SubElement(parent, tag)
         s.text = str(value)
 
 def _compose_item(parent_items: Element, node: Dict):
-    itype = node.get("type") or "LABEL"
+    itype = (node.get("type") or "LABEL").upper()
+
+    # Picture / Video / Diagram are sibling elements (not <item type="...">)
     if itype in {"PICTURE","VIDEO","DIAGRAM"}:
         tag = "picture" if itype == "PICTURE" else ("video" if itype == "VIDEO" else "diagram")
         el = SubElement(parent_items, tag)
@@ -38,6 +42,7 @@ def _compose_item(parent_items: Element, node: Dict):
         _set_bool_attr(el, "ownLine", node.get("ownLine"))
         return
 
+    # Regular eFormItem
     el = SubElement(parent_items, "item")
     _attr(el, [
         ("ref", node.get("ref")),
@@ -55,20 +60,23 @@ def _compose_item(parent_items: Element, node: Dict):
     _set_bool_attr(el, "ownLine", node.get("ownLine"))
     _set_bool_attr(el, "quoteAnswer", node.get("quoteAnswer"))
 
-    # Patient-visible label in <c>; defaults/macros in <text>
+    # === Correct element mapping for items ===
+    # Patient-facing prompt:
     _text(el, "c", node.get("label"))
+    # Default/pre-fill text/macros (e.g., @ptCpp.*):
     _text(el, "text", node.get("text"))
+    # Tooltip (rarely used by Ocean; allowed):
+    _text(el, "tooltip", node.get("tooltip"))
+    # Study export column header:
+    _text(el, "studyColumnHeader", node.get("studyColumnHeader"))
+    # Diagram overlay file name:
+    _text(el, "markableDiagramFileName", node.get("markableDiagramFileName"))
+    # Note output fields:
+    _text(el, "cNote", node.get("cNote"))
+    _text(el, "posNote", node.get("posNote"))
+    _text(el, "negNote", node.get("negNote"))
 
-    # Optional notes / tooltip
-    if node.get("cNote"): _text(el, "cNote", node["cNote"])
-    if node.get("posNote"): _text(el, "posNote", node["posNote"])
-    if node.get("negNote"): _text(el, "negNote", node["negNote"])
-    if node.get("tooltip"): _text(el, "tooltip", node["tooltip"])
-
-    if node.get("studyColumnHeader"): _text(el, "studyColumnHeader", node["studyColumnHeader"])
-    if node.get("markableDiagramFileName"): _text(el, "markableDiagramFileName", node["markableDiagramFileName"])
-
-    # dxCode (packed as "code|desc|type")
+    # Dx codes (packed as "code|desc|type")
     if node.get("dxCode"):
         dx = SubElement(el, "dxCode")
         parts = (node["dxCode"] or "").split("|")
@@ -76,9 +84,9 @@ def _compose_item(parent_items: Element, node: Dict):
         if len(parts) > 1: dx.set("desc", parts[1])
         if len(parts) > 2: dx.set("type", parts[2])
 
-    # validator
+    # Validator
     v = node.get("validator")
-    if isinstance(v, dict) and (v.get("type") or v.get("validIf") or v.get("format") or v.get("message")):
+    if isinstance(v, dict) and (v.get("type") or v.get("validIf") or v.get("format") or v.get("message") or (v.get("allowEmpty") is not None)):
         vv = SubElement(el, "validator")
         _attr(vv, [("type", v.get("type")), ("format", v.get("format")), ("message", v.get("message"))])
         if v.get("allowEmpty") is not None:
@@ -86,69 +94,65 @@ def _compose_item(parent_items: Element, node: Dict):
         if v.get("validIf"):
             vv.set("validIf", v.get("validIf"))
 
-    # hints
+    # Hints
     if node.get("hints"):
         hints = SubElement(el, "hints")
         for h in node["hints"]:
             ht = SubElement(hints, "hint")
-            ht.text = h
+            ht.text = str(h)
 
-    # choices
+    # Choices
     if node.get("choices"):
         chs = SubElement(el, "choices")
         for c in node["choices"]:
-            if not c: 
+            if not isinstance(c, dict):
                 continue
             ce = SubElement(chs, "choice")
             _attr(ce, [("val", c.get("val")), ("points", c.get("points")), ("flag", c.get("flag"))])
-            if c.get("display"): _text(ce, "display", c["display"])
-            if c.get("note"): _text(ce, "note", c["note"])
+            _text(ce, "display", c.get("display"))
+            _text(ce, "note", c.get("note"))
 
-def _compose_section(parent_items: Element, node: Dict, is_first: bool = False):
+def _compose_section(parent_items: Element, node: Dict):
     sec = SubElement(parent_items, "section")
 
-    attrs = dict(node.get("attributes") or {})
-    # Also accept the attrs at the section's top level
-    def pick(key): 
-        top = node.get(key)
-        return attrs.get(key) if attrs.get(key) not in (None,"") else top
-
-    subcategory = pick("subcategory") or ("QUESTIONNAIRE" if is_first else None)
-
+    # Merge attributes from node["attributes"] if present
+    attrs = node.get("attributes") or {}
     _attr(sec, [
         ("ref", node.get("ref")),
-        ("subcategory", subcategory),
-        ("headerStyle", pick("headerStyle")),
-        ("expandIf", pick("expandIf")),
-        ("showIf", pick("showIf")),
-        ("makeNoteIf", pick("makeNoteIf")),
-        ("flag", pick("flag")),
-        ("noteIndex", pick("noteIndex")),
+        ("subcategory", attrs.get("subcategory")),
+        ("headerStyle", attrs.get("headerStyle")),
+        ("expandIf", attrs.get("expandIf")),
+        ("showIf", attrs.get("showIf")),
+        ("makeNoteIf", attrs.get("makeNoteIf")),
+        ("flag", attrs.get("flag")),
+        ("noteIndex", attrs.get("noteIndex")),
     ])
     _set_bool_attr(sec, "groupItems", attrs.get("groupItems"))
     _set_bool_attr(sec, "quoteAnswers", attrs.get("quoteAnswers"))
     _set_bool_attr(sec, "ownLine", attrs.get("ownLine"))
 
-    # header caption
-    if node.get("header"):
-        _text(sec, "c", node["header"])
+    # Section header / note
+    _text(sec, "c", node.get("header"))
+    _text(sec, "cNote", node.get("cNote"))
 
-    # hints
+    # Section hints
     if node.get("hints"):
         hints = SubElement(sec, "hints")
         for h in node["hints"]:
             ht = SubElement(hints, "hint")
-            ht.text = h
+            ht.text = str(h)
 
+    # Children
     items = SubElement(sec, "items")
     for ch in node.get("items", []):
-        if (ch or {}).get("kind") == "section":
-            _compose_section(items, ch, is_first=False)
+        kind = (ch or {}).get("kind")
+        if kind == "section":
+            _compose_section(items, ch)
         else:
-            _compose_item(items, ch or {})
+            _compose_item(items, ch)
 
 def compose_xml(cir: Dict) -> bytes:
-    meta = cir.get("meta") or {}
+    meta = cir.get("meta", {})
     root = Element("eform")
     _attr(root, [
         ("ref", meta.get("ref")),
@@ -159,17 +163,16 @@ def compose_xml(cir: Dict) -> bytes:
         ("dataSecurityMode", meta.get("dataSecurityMode")),
     ])
 
-    # Optional top-level info
-    if cir.get("tagLine"): _text(root, "tagLine", cir["tagLine"])
-    if cir.get("desc"): _text(root, "desc", cir["desc"])
-    if cir.get("keywords"): _text(root, "keywords", cir["keywords"])
+    # top-level metadata
+    _text(root, "tagLine", cir.get("tagLine"))
+    _text(root, "desc", cir.get("desc"))
+    _text(root, "keywords", cir.get("keywords"))
 
-    # main section
+    # mainSection
     main = SubElement(root, "mainSection")
     ms_items = SubElement(main, "items")
-    sections = cir.get("sections") or []
-    for i, s in enumerate(sections):
-        _compose_section(ms_items, s or {}, is_first=(i == 0))
+    for s in cir.get("sections", []):
+        _compose_section(ms_items, s)
 
     pretty = minidom.parseString(tostring(root, encoding="utf-8")).toprettyxml(indent="  ", encoding="utf-8")
     return pretty
