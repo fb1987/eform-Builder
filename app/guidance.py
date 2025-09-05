@@ -1,8 +1,7 @@
-# app/guidance.py
 # Builds a compact guidance block from knowledge/runtime for CIR generation.
 
 from __future__ import annotations
-import os, json, re
+import os, json
 from typing import Dict, Any, List
 from app.knowledge_loader import Knowledge, DEFAULT_KNOWLEDGE_DIR
 
@@ -23,9 +22,6 @@ except Exception as e:
 
 def _take(lst: List[Any], n: int) -> List[Any]:
     return list(lst or [])[:n]
-
-def _lines() -> List[str]:
-    return []
 
 def _emit_bundle_text(bundle: Dict[str, Any], per_type_limit: int = 6) -> str:
     """
@@ -53,8 +49,8 @@ def _emit_bundle_text(bundle: Dict[str, Any], per_type_limit: int = 6) -> str:
     if idioms:
         lines.append("\nSCRIPTING_IDIOMS:")
         for i in idioms:
-            pat = i.get("pattern","")
-            ex  = i.get("example") or ""
+            pat = (i or {}).get("pattern","")
+            ex  = (i or {}).get("example") or ""
             lines.append(f"- {pat}" + (f"  (e.g., {ex})" if ex else ""))
 
     its: Dict[str,Any] = bundle.get("item_types") or {}
@@ -99,38 +95,56 @@ def _emit_bundle_text(bundle: Dict[str, Any], per_type_limit: int = 6) -> str:
     if macros:
         lines.append("\nCOMMON_MACROS:")
         for m in macros:
-            lines.append(f"- {m.get('macro','')}")
+            macro = (m or {}).get('macro','')
+            if macro:
+                lines.append(f"- {macro}")
 
     text = "\n".join(lines)
-    # Hard cap to avoid bloating the system prompt (keep ~8–10k chars)
+    # Hard cap to avoid bloating the system prompt (~12k chars)
     return text[:12000]
 
 # -------- public API used by openai_client --------
 
+_OCEAN_STRICT = """
+OCEAN-STRICT RULES (do not violate):
+- Put the patient-visible prompt in <c>. Reserve <text> for default values/macros only (e.g., @ptCpp.*).
+- Conditions must use JavaScript with .p (numeric points) or .r (response text). Examples:
+  * Show if answer is chosen:   someItem.p > 0   or   someItem.r == 'Yes'
+  * PROPOSITION/NO_YES_NOT_SURE often compare .r to 'Y'/'N'/'U'.
+- Never invent functions. Do NOT use SUM(). Use either q1.p+q2.p+... or ScriptUtil.sum(sectionRef).
+- '$$' expands the current item's own value in its <c> or <cNote> only. To show other items' values, compose a string in a FORMULA (e.g., name.r + '...' + date.r) and output it via <cNote> using $$.
+- MENUs must include a <choices> block with >= 2 <choice> entries. Avoid '|' in choice@val. Set points explicitly when scoring.
+- Add validators where common (e.g., MANDATORY on required fields; EMAIL/PHONE/POSTAL_CODE/REG_EXP where applicable).
+- First top-level section must map to subcategory='QUESTIONNAIRE'.
+- Refs must match ^[A-Za-z0-9_]+$ and be unique within the form.
+- If you add a total score FORMULA, prefer showIf="false" and report the value in <cNote> with $$.
+""".strip()
+
 def build_guidance_block(user_text: str, defaults: Dict) -> str:
     """
     Returns a compact, evidence-based guidance block to append to the system prompt.
-    If knowledge pack isn't available, returns a short fallback so your pipeline still runs.
+    If knowledge pack isn't available, returns a strict fallback so your pipeline still runs.
     """
-    if not _KNOWLEDGE_OK:
-        return (
-            "DATA_GUIDANCE:\n"
-            f"(knowledge pack unavailable: {KNOWLEDGE_DIR} — {_KNOWLEDGE_ERR})\n"
-            "- Proceed with schema-compliant CIR. Ensure top-level section maps to subcategory='QUESTIONNAIRE' in XML.\n"
-            "- Enforce: unique refs [A-Za-z0-9_]+, MENU/MENU_MULTI_SELECT have >= 2 choices, no '|' in choice@val, FORMULA has formula.\n"
-        )
+    header = [
+        "DATA_GUIDANCE:",
+        "- Output MUST satisfy CIR_JSON_SCHEMA; fields map 1:1 to Ocean eForm XML.",
+        "- Include 'kind' for every node (section/item).",
+        "- Keep refs unique; avoid '|' in choice@val."
+    ]
 
-    # Predict relevant item types from the user's description.
+    if not _KNOWLEDGE_OK:
+        body = "\n".join([
+            f"(knowledge pack unavailable: {KNOWLEDGE_DIR} — {_KNOWLEDGE_ERR})",
+            _OCEAN_STRICT
+        ])
+        return "\n".join(header) + "\n\n" + body
+
+    # Predict relevant item types from the user's description, then bundle compact guidance.
     predicted_types = _K.predict_item_types(user_text or "")
     bundle = _K.bundle(include_types=predicted_types)
 
-    header = [
-        "DATA_GUIDANCE:",
-        f"- Selected item types: {', '.join(predicted_types)}",
-        "- Output must satisfy CIR_JSON_SCHEMA; fields map 1:1 to Ocean eForm XML.",
-        "- Ensure first top-level section in CIR becomes subcategory='QUESTIONNAIRE' in XML.",
-        "- Keep refs unique (^[A-Za-z0-9_]+$). For MENU / MENU_MULTI_SELECT include >= 2 choices; no '|' in choice@val.",
-        "- Use validators where common (e.g., MANDATORY/REG_EXP/PHONE/EMAIL/POSTAL_CODE).",
-    ]
+    header.append(f"- Selected item types (from request): {', '.join(predicted_types)}")
     body = _emit_bundle_text(bundle)
-    return "\n".join(header) + "\n\n" + body
+
+    # Always append the non-negotiable Ocean rules.
+    return "\n".join(header) + "\n\n" + _OCEAN_STRICT + ("\n\n" + body if body else "")
