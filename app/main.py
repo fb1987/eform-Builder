@@ -1,5 +1,6 @@
-import io
-from fastapi import FastAPI, File, Form, UploadFile, HTTPException
+# app/main.py
+import io, json, logging
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse, JSONResponse
 from app.config import (
@@ -10,8 +11,11 @@ from app.validators import validate_and_normalize_cir
 from app.composer import compose_xml
 from app.pdf_outline import extract_outline_from_pdf
 from app.openai_client import cir_from_description, cir_from_pdf_text
+from app.normalizers_soft import soft_repair_cir  # <-- NEW
 
-app = FastAPI(title="Ocean eForm Builder", version="0.3.0")
+log = logging.getLogger("uvicorn.error")
+
+app = FastAPI(title="Ocean eForm Builder", version="0.2.1")
 
 cors_kwargs = dict(
     allow_credentials=False,
@@ -50,10 +54,16 @@ async def create_from_description_xml(
 ):
     defaults = {"meta": {"title": title, "ref": ref, "noteVersion": 2, "noteType": noteType, "dataSecurityMode": dataSecurityMode}}
     cir, _raw = cir_from_description(description, defaults)
+
+    # Soft repair BEFORE validation
+    cir = soft_repair_cir(cir)
+
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
-        # show normalized issues inline to aid debugging in the UI
-        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}, status_code=400)
+        payload = {"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}
+        log.error("Validation failed /v1/create-from-description-xml: %s", json.dumps(payload, ensure_ascii=False))
+        return JSONResponse(payload, status_code=400)
+
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
@@ -70,22 +80,31 @@ async def create_from_pdf_xml(
     pdf_text, _pages = extract_outline_from_pdf(pdf_bytes, file.filename)
     defaults = {"meta": {"title": title, "ref": ref, "noteVersion": 2, "noteType": noteType, "dataSecurityMode": dataSecurityMode}}
     cir, _raw = cir_from_pdf_text(pdf_text, defaults)
+
+    # Soft repair BEFORE validation
+    cir = soft_repair_cir(cir)
+
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
-        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}, status_code=400)
+        payload = {"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}
+        log.error("Validation failed /v1/create-from-pdf-xml: %s", json.dumps(payload, ensure_ascii=False))
+        return JSONResponse(payload, status_code=400)
+
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
 
 @app.post("/v1/compose-xml", tags=["programmatic"])
 async def compose_xml_endpoint(cir: dict):
-    v = validate_and_normalize_cir(cir)
+    v = validate_and_normalize_cir(soft_repair_cir(cir))
     if not v["ok"]:
-        return JSONResponse({"ok": False, "issues": v["issues"]}, status_code=400)
+        payload = {"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}
+        log.error("Validation failed /v1/compose-xml: %s", json.dumps(payload, ensure_ascii=False))
+        return JSONResponse(payload, status_code=400)
     xml_bytes = compose_xml(v["cir"])
     return PlainTextResponse(xml_bytes.decode("utf-8"), media_type="application/xml", headers={"X-Issues-Count": str(len(v["issues"]))})
 
 @app.post("/v1/validate-cir", tags=["programmatic"])
 async def validate_cir_endpoint(cir: dict):
-    v = validate_and_normalize_cir(cir)
+    v = validate_and_normalize_cir(soft_repair_cir(cir))
     return {"ok": v["ok"], "issues": v["issues"], "cir": v["cir"]}
