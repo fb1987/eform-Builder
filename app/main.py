@@ -53,7 +53,7 @@ async def create_from_description_xml(
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
         # show normalized issues inline to aid debugging in the UI
-        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir")}, status_code=400)
+        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}, status_code=400)
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
@@ -72,7 +72,7 @@ async def create_from_pdf_xml(
     cir, _raw = cir_from_pdf_text(pdf_text, defaults)
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
-        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir")}, status_code=400)
+        return JSONResponse({"ok": False, "issues": v["issues"], "cir": v.get("cir", {})}, status_code=400)
     xml_bytes = compose_xml(v["cir"])
     filename = f"{v['cir']['meta'].get('ref','form')}.xml"
     return _xml_stream(xml_bytes, filename, issues_count=len(v["issues"]))
