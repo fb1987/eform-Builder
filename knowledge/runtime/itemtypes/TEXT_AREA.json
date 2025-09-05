@@ -1,0 +1,61 @@
+{
+  "type": "TEXT_AREA",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No TEXT_AREA items use validators."
+    },
+    {
+      "rule": "No TEXT_AREA items use hints."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "No hints are used."
+    },
+    {
+      "rule": "No TEXT_AREA items use cNote."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No validators used."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No TEXT_AREA items use validators or hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    }
+  ],
+  "validators_common": [
+    "Mandatory",
+    "Mandatory (2/9)",
+    "Script",
+    "Mandatory (1/8)",
+    "Mandatory (3 of 10)"
+  ],
+  "hints_common": [
+    "Same_line",
+    "Border (at section level)",
+    "Use_buttons_for_menu (not for text_area)",
+    "Use_buttons_for_menu"
+  ],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "otherSymptoms",
+      "label": "Other symptoms of concern:"
+    },
+    {
+      "ref": "flu_shot_concerns",
+      "label": "If you have any concerns about the flu shot, please list them here:"
+    }
+  ]
+}

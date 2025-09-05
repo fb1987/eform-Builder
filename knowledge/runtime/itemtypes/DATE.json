@@ -1,0 +1,58 @@
+{
+  "type": "DATE",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No DATE items use validators."
+    },
+    {
+      "rule": "No DATE items use hints."
+    },
+    {
+      "rule": "No DATE items use cNote."
+    },
+    {
+      "rule": "DATE items do not use validators."
+    },
+    {
+      "rule": "No validators used."
+    },
+    {
+      "rule": "DATE items do not use hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "No validators used"
+    },
+    {
+      "rule": "No hints used."
+    }
+  ],
+  "validators_common": [
+    "Mandatory",
+    "Mandatory (3/3)",
+    "Mandatory (used for birth_date)",
+    "Mandatory (allowempty=\"false\")",
+    "Mandatory validator on 10/11."
+  ],
+  "hints_common": [
+    "Empty <hints/> element is present."
+  ],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "example_missing",
+      "label": "No concrete example in provided XML segment, but present in form per digest."
+    },
+    {
+      "ref": "example_missing",
+      "label": "No example in provided segment; see digest for presence."
+    }
+  ]
+}

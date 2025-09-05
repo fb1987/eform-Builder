@@ -1,0 +1,32 @@
+# Logic Cookbook
+
+- `{REF}`
+- `{REF}.{REF} != 0`
+- `{REF}.{REF} == '{REF}'`
+- `{REF}.{REF}({REF})`
+- `!!{REF}.{REF}`
+- `{REF}.{REF} == 1`
+- `{REF}.{REF}==1`
+- `{REF}.{REF} >= 2`
+- `{REF}.{REF}.{REF}('{REF}') != -1`
+- `{REF}.{REF} == 0`
+- `{REF}.{REF}( {REF} ) != 0`
+- `{REF}.{REF}()`
+- `{REF}.{REF}=='{REF}'`
+- `({REF}.{REF} == '{REF}' ? '{REF} {REF}' : '') == '{REF} {REF}'`
+- `{REF}.{REF} =='{REF}'`
+- `{REF}.{REF}.{REF}('|').{REF}('{REF}')`
+- `{REF}.{REF}.{REF}('|').{REF}('{REF} {REF}')`
+- `{REF}.{REF} != ''`
+- `({REF}.{REF} == '{REF}' ? '{REF} {REF} {REF} ({REF} {REF} {REF} {REF})' : '') != '{REF} {REF} {REF} ({REF} {REF} {REF} {REF})'`
+- `{REF}.{REF} == 2`
+- `{REF}.{REF} ==1`
+- `{REF}.{REF}>""`
+- `{REF}.{REF}`
+- `({REF}.{REF} == '{REF}' ? '{REF}' : '') == '{REF}'`
+- `{REF}.{REF} != 0 || {REF}.{REF} != 0`
+- `{REF}.{REF} !=0`
+- `{REF}.{REF} == '{REF}' || {REF}.{REF} == '{REF}'`
+- `{REF}.{REF}.{REF}('{REF}')`
+- `{REF}.{REF} == '{REF}' ? '{REF}' : ''`
+- `{REF}.{REF} == 3`

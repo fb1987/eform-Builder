@@ -1,0 +1,64 @@
+{
+  "type": "TEXT_FIELD",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No TEXT_FIELD items use validators."
+    },
+    {
+      "rule": "No TEXT_FIELD items use hints."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "No hints are used."
+    },
+    {
+      "rule": "No validators used."
+    },
+    {
+      "rule": "No TEXT_FIELD items use cNote."
+    },
+    {
+      "rule": "No hints used."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    }
+  ],
+  "validators_common": [
+    "Mandatory",
+    "Phone",
+    "Email",
+    "Reg_exp",
+    "Mandatory (6/13)"
+  ],
+  "hints_common": [
+    "Same_line",
+    "Use_buttons_for_menu",
+    "Use_buttons_for_menu (only for 'other' fields with choices).",
+    "Use_buttons_for_menu (when acting as 'other' for menu_multi_select)",
+    "Individual_menu_option"
+  ],
+  "choice_authoring": [
+    "When used as 'other' field choices mirror the parent menu/menu_multi_select."
+  ],
+  "examples": [
+    {
+      "ref": "located__item1",
+      "label": "elsewhere:"
+    },
+    {
+      "ref": "country1",
+      "label": "Which country?"
+    }
+  ]
+}

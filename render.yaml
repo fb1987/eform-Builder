@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: eform-builder
+    env: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-5
+      - key: ALLOW_ALL_ORIGINS
+        value: "1"
+      - key: EXPOSE_HEADERS
+        value: Content-Disposition, X-Service
+      - key: DEFAULT_NOTE_VERSION
+        value: "2"

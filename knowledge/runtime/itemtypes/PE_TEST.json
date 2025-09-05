@@ -1,0 +1,15 @@
+{
+  "type": "PE_TEST",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [],
+  "validators_common": [],
+  "hints_common": [],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "get_up_and_go_test",
+      "label": "Get Up and Go Test"
+    }
+  ]
+}

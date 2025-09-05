@@ -1,0 +1,42 @@
+{
+  "type": "TX",
+  "required": [],
+  "recommended": [
+    {
+      "rule": "All TX items have a <c> label."
+    }
+  ],
+  "anti_patterns": [
+    {
+      "rule": "No <cNote>."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No validators or hints are used."
+    },
+    {
+      "rule": "No points or scoring attributes are present."
+    },
+    {
+      "rule": "No <cNote>, hints, or validators are present."
+    }
+  ],
+  "validators_common": [],
+  "hints_common": [],
+  "choice_authoring": [],
+  "examples": [
+    {
+      "ref": "discussed_5_a_s_of_s",
+      "label": "discussed 5 A's of smoking cessation"
+    },
+    {
+      "ref": "supportive_care",
+      "label": "supportive care"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "type": "CHECKBOX",
+  "required": [],
+  "recommended": [],
+  "anti_patterns": [
+    {
+      "rule": "No CHECKBOX items use validators."
+    },
+    {
+      "rule": "No CHECKBOX items use hints."
+    },
+    {
+      "rule": "No CHECKBOX items use cNote."
+    },
+    {
+      "rule": "No validators are used."
+    },
+    {
+      "rule": "CHECKBOX items do not use hints."
+    },
+    {
+      "rule": "No validators."
+    },
+    {
+      "rule": "No hints."
+    },
+    {
+      "rule": "No hints are used."
+    },
+    {
+      "rule": "No validators used."
+    },
+    {
+      "rule": "CHECKBOX items do not use validators."
+    }
+  ],
+  "validators_common": [
+    "Mandatory",
+    "Script",
+    "Mandatory (required for 43/44 checkbox items the exception is a conditional/optional item).",
+    "Script (27/925)",
+    "Mandatory (1/925)"
+  ],
+  "hints_common": [
+    "Tooltip used for some checkbox items to provide additional context.",
+    "Border",
+    "Grey_bg",
+    "Individual_menu_option",
+    "Js_menu_option"
+  ],
+  "choice_authoring": [
+    "Each checkbox is a single option (not a group).",
+    "Points are used for scoring (2.0 for symptoms 0.0 for 'none of the above')."
+  ],
+  "examples": [
+    {
+      "ref": "in_the_chest1",
+      "label": "in the chest"
+    },
+    {
+      "ref": "allOverAbdomen",
+      "label": "all over the abdomen"
+    }
+  ]
+}
