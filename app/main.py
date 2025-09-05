@@ -73,6 +73,7 @@ async def create_from_pdf_xml(
     pdf_text, _pages = extract_outline_from_pdf(pdf_bytes, file.filename)
     defaults = {"meta": {"title": title, "ref": ref, "noteVersion": 2, "noteType": noteType, "dataSecurityMode": dataSecurityMode}}
     cir, _raw = cir_from_pdf_text(pdf_text, defaults)
+    cir = harden_cir(cir)
     v = validate_and_normalize_cir(cir)
     if not v["ok"]:
         raise HTTPException(status_code=400, detail={"issues": v["issues"]})
