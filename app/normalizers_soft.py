@@ -91,7 +91,8 @@ def _fix_expression(expr: str, item_refs: Optional[Set[str]] = None, section_ref
             else:
                 terms.append(a_stripped)
         return "(" + " + ".join(terms) + ")"
-    s = re.sub(r'\bSUM\s*\(\s*([^)]+?)\s*\)', repl_sum, s, flags=re.IGNORECASE)
+    s = re.sub(r'\bSUM\s*\(\s*([^)]+?)s = re.sub(r'(?<!ScriptUtil\.)\bSUM\s*\(\s*([^)]+?)\s*\)', repl_sum, s, flags=re.IGNORECASE)
+    s = re.sub(r'(?i)(?:ScriptUtil\.)+(sum\s*\()', r'ScriptUtil.\1', s)\s*\)', repl_sum, s, flags=re.IGNORECASE)
 
     # 3) Comparisons
     # strings: left == "foo" => left.r == "foo" (only if left is a known item ref)
