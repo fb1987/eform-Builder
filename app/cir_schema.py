@@ -4,7 +4,6 @@ from app.enums import (
     DATA_SECURITY_MODES, NOTE_TYPES, ITEM_SUBCATEGORIES, EMR_FIELDS
 )
 
-# JSON Schema dict for Structured Outputs (OpenAI Responses API)
 CIR_JSON_SCHEMA = {
   "type": "object",
   "additionalProperties": False,
@@ -25,10 +24,7 @@ CIR_JSON_SCHEMA = {
     "desc": {"type": "string"},
     "tagLine": {"type": "string"},
     "keywords": {"type": "string"},
-    "sections": {
-      "type": "array",
-      "items": {"$ref": "#/$defs/section"}
-    }
+    "sections": {"type": "array", "items": {"$ref": "#/$defs/section"}}
   },
   "required": ["meta", "sections"],
   "$defs": {
@@ -56,14 +52,8 @@ CIR_JSON_SCHEMA = {
             "ownLine": {"type": "boolean"}
           }
         },
-        "hints": {
-          "type": "array",
-          "items": {"type": "string", "enum": sorted(list(HINTS))}
-        },
-        "items": {
-          "type": "array",
-          "items": {"anyOf": [{"$ref": "#/$defs/section"}, {"$ref": "#/$defs/item"}]}
-        }
+        "hints": {"type": "array", "items": {"type": "string", "enum": sorted(list(HINTS))}},
+        "items": {"type": "array", "items": {"anyOf": [{"$ref": "#/$defs/section"}, {"$ref": "#/$defs/item"}]}}
       }
     },
     "choice": {
@@ -73,7 +63,8 @@ CIR_JSON_SCHEMA = {
       "properties": {
         "val": {"type": "string"},
         "display": {"type": "string"},
-        "points": {"type": "string"},
+        # ACCEPT number OR string for points (LLM/normalizer may produce either)
+        "points": {"anyOf": [{"type": "number"}, {"type": "string"}]},
         "flag": {"type": "string", "enum": sorted(list(FLAG_COLORS))},
         "note": {"type": "string"}
       }
@@ -86,7 +77,14 @@ CIR_JSON_SCHEMA = {
         "kind": {"type": "string", "const": "item"},
         "ref": {"type": "string"},
         "type": {"type": "string", "enum": sorted(list(ITEM_TYPES))},
+
+        # NEW: allow authoring fields that map to <c> and <cNote> in XML
+        "label": {"type": "string"},
+        "cNote": {"type": "string"},
+
+        # Prefill/default-only text (maps to <text> in XML)
         "text": {"type": "string"},
+
         "formula": {"type": "string"},
         "showIf": {"type": "string"},
         "makeNoteIf": {"type": "string"},
@@ -103,7 +101,7 @@ CIR_JSON_SCHEMA = {
         "flag": {"type": "string", "enum": sorted(list(FLAG_COLORS))},
         "negFlag": {"type": "string", "enum": sorted(list(FLAG_COLORS))},
         "emrField": {"type": "string"},
-        "choices": { "type": "array", "items": {"$ref": "#/$defs/choice"} },
+        "choices": {"type": "array", "items": {"$ref": "#/$defs/choice"}},
         "validator": {
           "type": "object",
           "additionalProperties": False,
@@ -115,10 +113,7 @@ CIR_JSON_SCHEMA = {
             "validIf": {"type": "string"}
           }
         },
-        "hints": {
-          "type": "array",
-          "items": {"type": "string", "enum": sorted(list(HINTS))}
-        }
+        "hints": {"type": "array", "items": {"type": "string", "enum": sorted(list(HINTS))}}
       }
     }
   }
