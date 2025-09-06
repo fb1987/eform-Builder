@@ -126,11 +126,17 @@ def build_guidance_block(user_text: str, defaults: Dict) -> str:
     If knowledge pack isn't available, returns a strict fallback so your pipeline still runs.
     """
     header = [
-        "DATA_GUIDANCE:",
-        "- Output MUST satisfy CIR_JSON_SCHEMA; fields map 1:1 to Ocean eForm XML.",
-        "- Include 'kind' for every node (section/item).",
-        "- Keep refs unique; avoid '|' in choice@val."
+    "DATA_GUIDANCE:",
+    f"- Selected item types: {', '.join(predicted_types)}",
+    "- Output must satisfy CIR_JSON_SCHEMA; fields map 1:1 to Ocean eForm XML.",
+    "- Ensure first top-level section in CIR becomes subcategory='QUESTIONNAIRE' in XML.",
+    "- Keep refs unique (^[A-Za-z0-9_]+$). For MENU / MENU_MULTI_SELECT include >= 2 choices; no '|' in choice@val.",
+    "- Use validators where common (e.g., MANDATORY/REG_EXP/PHONE/EMAIL/POSTAL_CODE).",
+    "- FORMULA must be a single JavaScript expression (no function/var/let/const/return). Prefer simple arithmetic using .p (e.g., q1.p + q2.p) or ScriptUtil.sum(sectionRef).",
+    "- For conditionals, use boolean expressions (e.g., q1.p >= 2) or a nested ternary to produce strings. For bucketed outputs (e.g., severity bands), prefer hidden LABEL items with makeNoteIf or a ternary expression, not function bodies.",
+    "- When comparing to strings, use .r (e.g., consentChoice.r == 'Yes'); for numeric arithmetic/thresholds, use .p (e.g., score.p >= 10). Never chain .p/.r (e.g., avoid '.p.p' or '.r.p').",
     ]
+
 
     if not _KNOWLEDGE_OK:
         body = "\n".join([
